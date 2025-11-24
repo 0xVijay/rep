@@ -137,7 +137,23 @@
                     </div>
                     <div class="pane-body">
                         <div class="editor-container">
-                            <div id="raw-request-input" contenteditable="true" class="editor" spellcheck="false"></div>
+                            <div id="raw-request-input" contenteditable="true" class="editor" spellcheck="false">
+                            </div>
+                        </div>
+                        <div class="search-bar-container">
+                            <input type="text" id="request-search" class="search-input"
+                                placeholder="Search in request...">
+                            <button id="request-search-prev" class="search-nav-btn" title="Previous match" disabled>
+                                <svg viewBox="0 0 24 24" width="14" height="14">
+                                    <path d="M7.41 15.41L12 10.83l4.59 4.58L18 14l-6-6-6 6z" fill="currentColor" />
+                                </svg>
+                            </button>
+                            <button id="request-search-next" class="search-nav-btn" title="Next match" disabled>
+                                <svg viewBox="0 0 24 24" width="14" height="14">
+                                    <path d="M7.41 8.59L12 13.17l4.59-4.58L18 10l-6 6-6-6z" fill="currentColor" />
+                                </svg>
+                            </button>
+                            <span id="request-search-count" class="search-count"></span>
                         </div>
                     </div>
                 </div>
@@ -188,6 +204,21 @@
                     <div class="pane-body">
                         <div class="editor-container">
                             <pre id="raw-response-display"></pre>
+                        </div>
+                        <div class="search-bar-container">
+                            <input type="text" id="response-search" class="search-input"
+                                placeholder="Search in response...">
+                            <button id="response-search-prev" class="search-nav-btn" title="Previous match" disabled>
+                                <svg viewBox="0 0 24 24" width="14" height="14">
+                                    <path d="M7.41 15.41L12 10.83l4.59 4.58L18 14l-6-6-6 6z" fill="currentColor" />
+                                </svg>
+                            </button>
+                            <button id="response-search-next" class="search-nav-btn" title="Next match" disabled>
+                                <svg viewBox="0 0 24 24" width="14" height="14">
+                                    <path d="M7.41 8.59L12 13.17l4.59-4.58L18 10l-6 6-6-6z" fill="currentColor" />
+                                </svg>
+                            </button>
+                            <span id="response-search-count" class="search-count"></span>
                         </div>
                     </div>
                 </div>

@@ -2377,3 +2377,150 @@ pre {
 .toast.toast-success {
     background: var(--success-color);
 }
+
+/* ============================================
+   Keyboard Shortcuts Settings Styles
+   ============================================ */
+
+/* Main shortcuts container */
+.shortcuts-container {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+/* Individual shortcut row */
+.shortcut-row {
+    display: grid;
+    grid-template-columns: 1fr auto auto;
+    gap: 12px;
+    align-items: center;
+    padding: 12px 14px;
+    background: var(--input-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    transition: all 0.2s ease;
+}
+
+.shortcut-row:hover {
+    background: rgba(138, 180, 248, 0.05);
+    border-color: rgba(138, 180, 248, 0.3);
+}
+
+/* Shortcut description/label */
+.shortcut-description {
+    font-size: 13px;
+    color: var(--text-color);
+    font-weight: 500;
+    line-height: 1.4;
+    display: flex;
+    align-items: center;
+}
+
+/* Key capture button */
+.shortcut-key-btn {
+    padding: 8px 16px;
+    background: var(--sidebar-bg);
+    border: 1px solid var(--border-color);
+    color: var(--accent-color);
+    font-family: 'Consolas', 'Monaco', monospace;
+    font-size: 12px;
+    font-weight: 600;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    min-width: 140px;
+    text-align: center;
+    white-space: nowrap;
+}
+
+.shortcut-key-btn:hover {
+    background: var(--hover-bg);
+    border-color: var(--accent-color);
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.shortcut-key-btn:active {
+    transform: translateY(0);
+}
+
+/* Capturing state */
+.shortcut-key-btn.capturing {
+    background: rgba(138, 180, 248, 0.15);
+    border-color: var(--accent-color);
+    color: var(--success-color);
+    animation: pulse-capture 1.5s infinite;
+}
+
+@keyframes pulse-capture {
+
+    0%,
+    100% {
+        box-shadow: 0 0 0 0 rgba(138, 180, 248, 0.4);
+    }
+
+    50% {
+        box-shadow: 0 0 0 4px rgba(138, 180, 248, 0);
+    }
+}
+
+/* Reset button */
+.shortcut-reset-btn {
+    padding: 6px 10px;
+    background: transparent;
+    border: 1px solid var(--border-color);
+    color: #9aa0a6;
+    font-size: 16px;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 36px;
+    height: 36px;
+}
+
+.shortcut-reset-btn:hover {
+    background: rgba(129, 201, 149, 0.1);
+    border-color: var(--success-color);
+    color: var(--success-color);
+    transform: rotate(180deg);
+}
+
+.shortcut-reset-btn:active {
+    transform: rotate(180deg) scale(0.95);
+}
+
+/* Info text for shortcuts section */
+.shortcuts-info {
+    padding: 10px 12px;
+    background: rgba(138, 180, 248, 0.1);
+    border: 1px solid rgba(138, 180, 248, 0.2);
+    border-radius: 4px;
+    font-size: 12px;
+    color: #9aa0a6;
+    line-height: 1.5;
+    margin-bottom: 8px;
+}
+
+.shortcuts-info strong {
+    color: var(--accent-color);
+}
+
+/* Responsive adjustments */
+@media (max-width: 600px) {
+    .shortcut-row {
+        grid-template-columns: 1fr;
+        gap: 10px;
+    }
+
+    .shortcut-key-btn {
+        width: 100%;
+    }
+
+    .shortcut-reset-btn {
+        width: 100%;
+    }
+}

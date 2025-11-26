@@ -3,48 +3,28 @@ import { state, addToHistory } from './state.js';
 import { elements, updateHistoryButtons, toggleOOSVisibility } from './ui.js';
 import { parseRequest, executeRequest } from './network.js';
 import { formatBytes, renderDiff, highlightHTTP } from './utils.js';
+import { settings } from './settings.js';
 
 /**
- * Keyboard shortcut configuration
- * Format: { key: 'KeyCode', ctrl: bool, shift: bool, alt: bool, action: fn, description: string }
- * 
- * To add new shortcuts:
- * 1. Add entry to KEYBOARD_SHORTCUTS array
- * 2. Action function receives the KeyboardEvent
+ * Action definitions (maps action IDs to functions)
  */
-const KEYBOARD_SHORTCUTS = [
-    {
-        key: 'Space',
-        ctrl: true,
-        description: 'Send request',
-        action: () => {
-            const sendBtn = document.getElementById('send-btn');
-            if (sendBtn && !sendBtn.disabled) {
-                handleSendRequest();
-            }
+const SHORTCUT_ACTIONS = {
+    sendRequest: () => {
+        const sendBtn = document.getElementById('send-btn');
+        if (sendBtn && !sendBtn.disabled) {
+            handleSendRequest();
         }
     },
-    {
-        key: 'KeyL',
-        ctrl: true,
-        description: 'Clear request input',
-        action: () => {
-            if (elements.rawRequestInput) {
-                elements.rawRequestInput.innerText = '';
-                elements.rawRequestInput.focus();
-            }
+    clearInput: () => {
+        if (elements.rawRequestInput) {
+            elements.rawRequestInput.innerText = '';
+            elements.rawRequestInput.focus();
         }
     },
-    {
-        key: 'KeyO',
-        ctrl: true,
-        shift: true,
-        description: 'Toggle OOS visibility',
-        action: () => {
-            toggleOOSVisibility();
-        }
+    toggleOOS: () => {
+        toggleOOSVisibility();
     }
-];
+};
 
 /**
  * Check if a keyboard event matches a shortcut definition
@@ -54,7 +34,7 @@ function matchesShortcut(event, shortcut) {
     const shiftMatch = shortcut.shift ? event.shiftKey : !event.shiftKey;
     const altMatch = shortcut.alt ? event.altKey : !event.altKey;
     const keyMatch = event.code === shortcut.key;
-    
+
     return keyMatch && ctrlMatch && shiftMatch && altMatch;
 }
 
@@ -63,10 +43,19 @@ function matchesShortcut(event, shortcut) {
  */
 export function initKeyboardShortcuts() {
     document.addEventListener('keydown', (e) => {
-        for (const shortcut of KEYBOARD_SHORTCUTS) {
+        // Get shortcuts from settings
+        const shortcuts = settings.keyboardShortcuts.value && Object.keys(settings.keyboardShortcuts.value).length > 0
+            ? settings.keyboardShortcuts.value
+            : settings.keyboardShortcuts.default;
+
+        // Check each shortcut
+        for (const [actionId, shortcut] of Object.entries(shortcuts)) {
             if (matchesShortcut(e, shortcut)) {
                 e.preventDefault();
-                shortcut.action(e);
+                const action = SHORTCUT_ACTIONS[actionId];
+                if (action) {
+                    action(e);
+                }
                 return;
             }
         }
@@ -77,7 +66,10 @@ export function initKeyboardShortcuts() {
  * Get all registered keyboard shortcuts (for help/documentation)
  */
 export function getKeyboardShortcuts() {
-    return KEYBOARD_SHORTCUTS.map(s => ({
+    const shortcuts = settings.keyboardShortcuts.value && Object.keys(settings.keyboardShortcuts.value).length > 0
+        ? settings.keyboardShortcuts.value
+        : settings.keyboardShortcuts.default;
+    return Object.values(shortcuts).map(s => ({
         key: s.key,
         modifiers: [s.ctrl && 'Ctrl', s.shift && 'Shift', s.alt && 'Alt'].filter(Boolean),
         description: s.description

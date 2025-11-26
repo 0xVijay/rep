@@ -93,6 +93,19 @@ export const settings = {
         type: 'list',
         value: [],
         default: []
+    },
+
+    // Keyboard Shortcuts
+    keyboardShortcuts: {
+        title: 'Keyboard Shortcuts',
+        description: 'Customize keyboard shortcuts for common actions',
+        type: 'shortcuts',
+        value: {},
+        default: {
+            sendRequest: { key: 'Space', ctrl: true, shift: false, alt: false, description: 'Send request' },
+            clearInput: { key: 'KeyL', ctrl: true, shift: false, alt: false, description: 'Clear request input' },
+            toggleOOS: { key: 'KeyO', ctrl: true, shift: true, alt: false, description: 'Toggle OOS visibility' }
+        }
     }
 };
 
@@ -249,6 +262,7 @@ function renderSettingsUI() {
     const aiTab = document.getElementById('settings-tab-ai');
     const privacyTab = document.getElementById('settings-tab-privacy');
     const filteringTab = document.getElementById('settings-tab-filtering');
+    const shortcutsTab = document.getElementById('settings-tab-shortcuts');
 
     if (!aiTab || !privacyTab || !filteringTab) return;
 
@@ -256,6 +270,7 @@ function renderSettingsUI() {
     aiTab.innerHTML = '';
     privacyTab.innerHTML = '';
     filteringTab.innerHTML = '';
+    if (shortcutsTab) shortcutsTab.innerHTML = '';
 
     // AI Tab
     aiTab.appendChild(createSettingSection('anthropicApiKey', settings.anthropicApiKey));
@@ -267,6 +282,11 @@ function renderSettingsUI() {
     // Filtering Tab
     filteringTab.appendChild(createSettingSection('oosPatterns', settings.oosPatterns));
     filteringTab.appendChild(createSettingSection('inScopePatterns', settings.inScopePatterns));
+
+    // Shortcuts Tab
+    if (shortcutsTab) {
+        shortcutsTab.appendChild(createSettingSection('keyboardShortcuts', settings.keyboardShortcuts));
+    }
 }
 
 /**
@@ -296,6 +316,8 @@ function createSettingSection(key, setting) {
         content.appendChild(createSelectInput(key, setting));
     } else if (setting.type === 'checkbox') {
         content.appendChild(createCheckboxInput(key, setting));
+    } else if (setting.type === 'shortcuts') {
+        content.appendChild(createShortcutsInput(key, setting));
     }
 
     // Add warning if present
@@ -564,4 +586,178 @@ async function checkCorsPermission() {
         });
     });
 }
+
+/**
+ * Create shortcuts input (key capture interface)
+ */
+function createShortcutsInput(key, setting) {
+    const container = document.createElement('div');
+    container.className = 'shortcuts-container';
+
+    // Add info banner
+    const infoBanner = document.createElement('div');
+    infoBanner.className = 'shortcuts-info';
+    infoBanner.innerHTML = `
+        <strong>ℹ️ Note:</strong> All keyboard shortcuts are required and cannot be removed. 
+        Click on any shortcut to reassign it. Press <strong>Esc</strong> to cancel editing.
+    `;
+    container.appendChild(infoBanner);
+
+    // Merge defaults with saved values to ensure all shortcuts are shown
+    // This handles cases where new shortcuts are added or saved state is partial
+    const shortcuts = { ...setting.default, ...(setting.value || {}) };
+
+    Object.entries(shortcuts).forEach(([actionId, shortcut]) => {
+        const row = createShortcutRow(actionId, shortcut, key);
+        container.appendChild(row);
+    });
+
+    return container;
+}
+
+/**
+ * Create a single shortcut row with key capture
+ */
+function createShortcutRow(actionId, shortcut, settingKey) {
+    const row = document.createElement('div');
+    row.className = 'shortcut-row';
+
+    // Description
+    const desc = document.createElement('span');
+    desc.className = 'shortcut-description';
+    desc.textContent = shortcut.description;
+
+    // Key display/capture button
+    const keyBtn = document.createElement('button');
+    keyBtn.className = 'shortcut-key-btn';
+    keyBtn.textContent = formatShortcut(shortcut);
+    keyBtn.type = 'button';
+
+    let capturing = false;
+
+    keyBtn.addEventListener('click', () => {
+        if (capturing) return;
+
+        capturing = true;
+        const originalShortcut = { ...shortcut };
+        keyBtn.textContent = 'Press keys... (Esc to cancel)';
+        keyBtn.classList.add('capturing');
+
+        const handleKeyCapture = (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+
+            // Allow Escape to cancel
+            if (e.key === 'Escape') {
+                keyBtn.textContent = formatShortcut(originalShortcut);
+                keyBtn.classList.remove('capturing');
+                capturing = false;
+                document.removeEventListener('keydown', handleKeyCapture, true);
+                return;
+            }
+
+            // Ignore modifier-only presses
+            if (['Control', 'Shift', 'Alt', 'Meta'].includes(e.key)) {
+                return;
+            }
+
+            const newShortcut = {
+                key: e.code,
+                ctrl: e.ctrlKey || e.metaKey,
+                shift: e.shiftKey,
+                alt: e.altKey,
+                description: shortcut.description
+            };
+
+            // Check for conflicts
+            const conflict = findShortcutConflict(actionId, newShortcut, settingKey);
+            if (conflict) {
+                showToast(`Conflict with "${conflict.description}"`, 'error');
+                keyBtn.textContent = formatShortcut(originalShortcut);
+            } else {
+                // Update setting
+                if (!settings[settingKey].value || Object.keys(settings[settingKey].value).length === 0) {
+                    settings[settingKey].value = { ...settings[settingKey].default };
+                }
+                settings[settingKey].value[actionId] = newShortcut;
+                keyBtn.textContent = formatShortcut(newShortcut);
+                showToast('Shortcut updated', 'success');
+            }
+
+            capturing = false;
+            keyBtn.classList.remove('capturing');
+            document.removeEventListener('keydown', handleKeyCapture, true);
+        };
+
+        document.addEventListener('keydown', handleKeyCapture, true);
+    });
+
+    // Reset button
+    const resetBtn = document.createElement('button');
+    resetBtn.className = 'shortcut-reset-btn';
+    resetBtn.innerHTML = '↺';
+    resetBtn.title = 'Reset to default';
+    resetBtn.type = 'button';
+    resetBtn.addEventListener('click', () => {
+        const defaultShortcut = settings[settingKey].default[actionId];
+        if (!settings[settingKey].value) {
+            settings[settingKey].value = { ...settings[settingKey].default };
+        }
+        settings[settingKey].value[actionId] = { ...defaultShortcut };
+        keyBtn.textContent = formatShortcut(defaultShortcut);
+        showToast('Shortcut reset to default', 'success');
+    });
+
+    row.appendChild(desc);
+    row.appendChild(keyBtn);
+    row.appendChild(resetBtn);
+
+    return row;
+}
+
+/**
+ * Format shortcut for display
+ */
+function formatShortcut(shortcut) {
+    const parts = [];
+    if (shortcut.ctrl) parts.push('Ctrl');
+    if (shortcut.shift) parts.push('Shift');
+    if (shortcut.alt) parts.push('Alt');
+
+    // Convert key code to readable name
+    let keyName = shortcut.key;
+    if (keyName.startsWith('Key')) {
+        keyName = keyName.substring(3);
+    } else if (keyName === 'Space') {
+        keyName = 'Space';
+    } else if (keyName.startsWith('Digit')) {
+        keyName = keyName.substring(5);
+    }
+    parts.push(keyName);
+
+    return parts.join(' + ');
+}
+
+/**
+ * Find if a shortcut conflicts with existing ones
+ */
+function findShortcutConflict(excludeActionId, newShortcut, settingKey) {
+    const shortcuts = settings[settingKey].value && Object.keys(settings[settingKey].value).length > 0
+        ? settings[settingKey].value
+        : settings[settingKey].default;
+
+    for (const [actionId, shortcut] of Object.entries(shortcuts)) {
+        if (actionId === excludeActionId) continue;
+
+        if (shortcut.key === newShortcut.key &&
+            shortcut.ctrl === newShortcut.ctrl &&
+            shortcut.shift === newShortcut.shift &&
+            shortcut.alt === newShortcut.alt) {
+            return shortcut;
+        }
+    }
+
+    return null;
+}
+
 

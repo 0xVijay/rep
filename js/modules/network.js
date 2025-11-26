@@ -133,6 +133,20 @@ export function parseRequest(rawContent, useHttps) {
 
 export async function executeRequest(url, options) {
     const startTime = performance.now();
+
+    // Check if we have permission to access all URLs
+    const hasPermission = await new Promise((resolve) => {
+        chrome.permissions.contains({
+            origins: ['<all_urls>']
+        }, (result) => {
+            resolve(result);
+        });
+    });
+
+    if (!hasPermission) {
+        throw new Error('CORS blocked. Enable "CORS for All Hosts" in Settings ⚙️ to send requests to any domain.');
+    }
+
     try {
         // Try direct fetch first (works when host_permissions allow it)
         const response = await fetch(url, options);
@@ -149,11 +163,6 @@ export async function executeRequest(url, options) {
             duration
         };
     } catch (err) {
-        // Check if user has consented to CORS for all hosts
-        if (!settings.enableCorsForAllHosts.value) {
-            throw new Error('CORS blocked. To send requests to any domain, enable "CORS for All Hosts" in Settings (gear icon). Note: Only enable if you understand the privacy implications.');
-        }
-
         // Fallback via background proxy (bypasses CORS with host permissions)
         return new Promise((resolve, reject) => {
             try {
@@ -162,10 +171,17 @@ export async function executeRequest(url, options) {
                     (res) => {
                         const endTime = performance.now();
                         const duration = (endTime - startTime).toFixed(0);
+
+                        if (chrome.runtime.lastError) {
+                            reject(new Error('Extension proxy error: ' + chrome.runtime.lastError.message));
+                            return;
+                        }
+
                         if (!res || !res.ok) {
                             reject(new Error(res && res.error ? res.error : 'Proxy fetch failed'));
                             return;
                         }
+
                         const headers = new Headers();
                         Object.entries(res.headers || {}).forEach(([k, v]) => headers.append(k, v));
                         const size = new TextEncoder().encode(res.body || '').length;

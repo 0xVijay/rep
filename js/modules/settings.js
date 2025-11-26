@@ -72,11 +72,11 @@ export const settings = {
     // CORS Settings
     enableCorsForAllHosts: {
         title: 'Enable CORS for All Hosts',
-        description: 'Allow requests to any domain by bypassing CORS restrictions. ⚠️ Only enable this if you understand the privacy implications.',
+        description: 'Allow requests to any domain by bypassing CORS restrictions.',
         type: 'checkbox',
         value: false,
         default: false,
-        warning: 'Enabling this setting allows the extension to make requests to any website on your behalf. Only enable this if you trust the tool and understand the risks.'
+        warning: 'This allows the extension to make requests to any website on your behalf. Only enable if you trust the tool and understand the privacy implications.'
     },
 
     // Filtering Settings
@@ -121,6 +121,10 @@ export async function loadSettings() {
                 }
             });
         }
+
+        // Sync CORS setting with actual Chrome permission state
+        const hasPermission = await checkCorsPermission();
+        settings.enableCorsForAllHosts.value = hasPermission;
 
         // If no OOS patterns loaded (first time or empty), use defaults
         if (!settings.oosPatterns.value || settings.oosPatterns.value.length === 0) {
@@ -455,7 +459,25 @@ function createCheckboxInput(key, setting) {
     checkbox.checked = setting.value || false;
 
     // Update setting value on change
-    checkbox.addEventListener('change', (e) => {
+    checkbox.addEventListener('change', async (e) => {
+        // Special handling for CORS permission
+        if (key === 'enableCorsForAllHosts') {
+            if (e.target.checked) {
+                // Request permission from Chrome
+                const granted = await requestCorsPermission();
+                if (!granted) {
+                    e.target.checked = false;
+                    settings[key].value = false;
+                    showToast('Permission denied. CORS for All Hosts not enabled.', 'error');
+                    return;
+                }
+                showToast('CORS permission granted successfully', 'success');
+            } else {
+                // Revoke permission
+                await revokeCorsPermission();
+                showToast('CORS permission revoked', 'success');
+            }
+        }
         settings[key].value = e.target.checked;
     });
 
@@ -502,3 +524,44 @@ function showToast(message, type = 'success') {
         setTimeout(() => toast.remove(), 300);
     }, 2000);
 }
+
+/**
+ * Request <all_urls> permission from user
+ * Shows Chrome's native permission dialog
+ */
+async function requestCorsPermission() {
+    return new Promise((resolve) => {
+        chrome.permissions.request({
+            origins: ['<all_urls>']
+        }, (granted) => {
+            resolve(granted);
+        });
+    });
+}
+
+/**
+ * Revoke <all_urls> permission
+ */
+async function revokeCorsPermission() {
+    return new Promise((resolve) => {
+        chrome.permissions.remove({
+            origins: ['<all_urls>']
+        }, (removed) => {
+            resolve(removed);
+        });
+    });
+}
+
+/**
+ * Check if CORS permission is currently granted
+ */
+async function checkCorsPermission() {
+    return new Promise((resolve) => {
+        chrome.permissions.contains({
+            origins: ['<all_urls>']
+        }, (result) => {
+            resolve(result);
+        });
+    });
+}
+

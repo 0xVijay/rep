@@ -102,19 +102,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
     });
 
-    // OOS filter button behaves inline with other filters: toggles "oos" filter
-    if (elements.oosToggle) {
-        elements.oosToggle.addEventListener('click', () => {
-            const willActivate = !elements.oosToggle.classList.contains('active');
-            // Deactivate other filter buttons
-            document.querySelectorAll('.filter-btn:not(#oos-toggle)').forEach(b => b.classList.remove('active'));
-            // Toggle OOS button
-            elements.oosToggle.classList.toggle('active', willActivate);
-            // Set filter
-            state.currentFilter = willActivate ? 'oos' : 'all';
-            filterRequests();
-        });
-    }
+
 
     // Clear All
     if (elements.clearAllBtn) {

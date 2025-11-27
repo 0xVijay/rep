@@ -509,8 +509,8 @@ export function filterRequests() {
 
         // Check OOS visibility
         // If filter is 'oos', show ONLY OOS items (matchesFilter handles this)
-        // If filter is NOT 'oos', HIDE OOS items (always)
-        const matchesOOS = state.currentFilter === 'oos' ? true : !isOOS;
+        // If filter is NOT 'oos', use hideOOS state
+        const matchesOOS = state.currentFilter === 'oos' ? true : (state.hideOOS ? !isOOS : true);
 
         if (matchesSearch && matchesFilter && matchesOOS) {
             item.style.display = 'flex';

@@ -1124,7 +1124,6 @@ export function importRequests(file) {
     };
     reader.readAsText(file);
 }
-<<<<<<< HEAD
 
 /**
  * Update OOS statistics display
@@ -1248,5 +1247,3 @@ export function initOOSToggle() {
         elements.oosToggle.addEventListener('click', toggleOOSVisibility);
     }
 }
-=======
->>>>>>> upstream/main
